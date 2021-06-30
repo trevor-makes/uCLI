@@ -1,0 +1,28 @@
+{
+  "name": "uCLI",
+  "version": "0.0.0",
+  "description": "uCLI is a simple callback-based command line interface for Arduino projects",
+  "keywords": "Arduino, CLI",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/trevor-makes/uCLI.git"
+  },
+  "authors":
+  [
+    {
+      "name": "Trevor Makes",
+      "email": "the.trevor.makes@gmail.com",
+      "maintainer": true
+    }
+  ],
+  "frameworks": "arduino",
+  "platforms": "atmelavr",
+  "dependencies":
+  [
+    {
+      "name": "uANSI",
+      "version": "https://github.com/trevor-makes/uANSI.git"
+    }
+  ]
+}
