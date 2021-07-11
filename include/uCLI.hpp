@@ -1,3 +1,6 @@
+// https://github.com/trevor-makes/uCLI.git
+// Copyright (c) 2021 Trevor Makes
+
 #pragma once
 
 #include <stdint.h>
