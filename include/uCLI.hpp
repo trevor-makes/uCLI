@@ -1,4 +1,3 @@
-// https://github.com/trevor-makes/uCLI.git
 // Copyright (c) 2021 Trevor Makes
 
 #pragma once
@@ -19,7 +18,7 @@ struct Command {
 void read_command(Stream& stream, char* buffer, uint8_t length);
 
 // Read string from stream into buffer
-template <typename T, int L>
+template <typename T, uint8_t L>
 void read_command(T& stream, char (&buffer)[L]) {
     read_command(stream, buffer, L);
 }
@@ -28,7 +27,7 @@ void read_command(T& stream, char (&buffer)[L]) {
 void parse_command(Stream& stream, char* input, const Command* commands, uint8_t length);
 
 // Attempt to match input to list of commands
-template <typename T, int L>
+template <typename T, uint8_t L>
 void parse_command(T& stream, char* input, const Command (&commands)[L]) {
     parse_command(input, commands, L);
 }

@@ -1,11 +1,9 @@
-// https://github.com/trevor-makes/uCLI.git
 // Copyright (c) 2021 Trevor Makes
 
 #include "uCLI.hpp"
 #include "uANSI.hpp"
 
 #include <Arduino.h>
-#include <string.h>
 
 namespace uCLI {
 
