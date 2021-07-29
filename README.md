@@ -9,7 +9,10 @@ To add uCLI to an existing PlatformIO project, modify the `platformio.ini` confi
 ```
 lib_deps =
     https://github.com/trevor-makes/uCLI.git
+monitor_filters = direct
 ```
+
+Modifying `monitor_filters` is optional, but will configure the PlatformIO serial monitor to display ANSI escape sequences correctly.
 
 uCLI is distributed under the [MIT license](LICENSE.txt)
 

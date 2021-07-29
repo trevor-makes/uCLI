@@ -32,6 +32,7 @@ void read_command(Stream& stream, char* buffer, uint8_t length) {
       continue;
     }
 
+    // Handle enter/return
     if (input == '\n' || input == '\r') {
       if (i > 0) {
         // Exit loop and execute command
@@ -50,13 +51,25 @@ void read_command(Stream& stream, char* buffer, uint8_t length) {
   buffer[i] = '\0';
 }
 
+char* split_at_space(char* input) {
+  // Scan until end of string
+  while (*input != '\0') {
+    // Replace space with null and return
+    if (*input == ' ') {
+      *input++ = '\0';
+      break;
+    }
+    ++input;
+  }
+  return input;
+}
+
 void parse_command(Stream& stream, char* input, const Command commands[], uint8_t length) {
-  char* token = strtok(input, " ");
+  char* message = split_at_space(input);
 
   // Look for match in command list
   for (uint8_t i = 0; i < length; ++i) {
-    if (strcmp(token, commands[i].command) == 0) {
-      char* message = strtok(nullptr, "");
+    if (strcmp(input, commands[i].command) == 0) {
       commands[i].callback(message);
       return;
     }
