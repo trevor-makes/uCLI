@@ -51,13 +51,20 @@ void read_command(Stream& stream, char* buffer, uint8_t length) {
   buffer[i] = '\0';
 }
 
+char* trim_space(char* input) {
+  while (*input == ' ') {
+    ++input;
+  }
+  return input;
+}
+
 char* split_at_space(char* input) {
   // Scan until end of string
   while (*input != '\0') {
     // Replace space with null and return
     if (*input == ' ') {
       *input++ = '\0';
-      break;
+      return trim_space(input);
     }
     ++input;
   }
@@ -65,6 +72,7 @@ char* split_at_space(char* input) {
 }
 
 void parse_command(Stream& stream, char* input, const Command commands[], uint8_t length) {
+  input = trim_space(input);
   char* message = split_at_space(input);
 
   // Look for match in command list
