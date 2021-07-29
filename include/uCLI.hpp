@@ -29,7 +29,7 @@ void parse_command(Stream& stream, char* input, const Command* commands, uint8_t
 // Attempt to match input to list of commands
 template <typename T, uint8_t L>
 void parse_command(T& stream, char* input, const Command (&commands)[L]) {
-    parse_command(input, commands, L);
+    parse_command(stream, input, commands, L);
 }
 
 // Display prompt and execute command from stream
