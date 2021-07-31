@@ -2,7 +2,7 @@
 
 uCLI is a simple callback-based command line interface for Arduino projects.
 
-uCLI is designed for Arduino and supports serial connections that implement the Stream interface, like Serial, SoftwareSerial, and SerialUSB. This package is intended to be used with [PlatformIO](https://platformio.org/), but the source files can be manually copied into a project when using the Arduino IDE.
+uCLI is designed for Arduino and supports serial connections that implement the Stream interface, like Serial, SoftwareSerial, and SerialUSB. This library is intended to be used with [PlatformIO](https://platformio.org/), but the source files can be manually copied into a project when using the Arduino IDE.
 
 To add uCLI to an existing PlatformIO project, modify the `platformio.ini` configuration file as follows:
 
@@ -18,25 +18,30 @@ uCLI is distributed under the [MIT license](LICENSE.txt)
 
 ## Usage
 
-Use the `run_command` function to display a '>' prompt and wait for input. When the enter key is pressed, text up to the first space will be matched with a Command key-value pair and the associated function will be called. Any text following the command will be provided as a parameter. Each call to `run_command` handles one command and returns, so it should normally be called within a loop.
+Use the `run_command()` function to display a '>' prompt and wait for input. When the enter key is pressed, the first token in the input will be matched with a `Command` key-value pair and the associated function pointer will be called. Any remaining tokens following the command will be provided as an `Args` parameter. Each call to `run_command()` handles one command and returns, so it should normally be called within a loop.
+
+The `Args` parameter can be used as an iterator by calling `next()` until an empty string is returned. This will return one token at a time, with leading and trailing spaces trimmed away. Alternatively, the `remainder()` function will return all remaining text without splitting or trimming spaces.
 
 ```
-void do_foo(const char* args) {
-    Serial.write("Doing foo with: ");
-    int value = atoi(args);
-    Serial.println(value);
+void do_add(uCLI::Args args) {
+  int a = atoi(args.next()); // get first token following command
+  int b = atoi(args.next()); // get second token following command
+  Serial.print(a);
+  Serial.print(" + ");
+  Serial.print(b);
+  Serial.print(" = ");
+  Serial.println(a + b);
 }
 
-void do_bar(const char* args) {
-    Serial.write("Doing bar with: ");
-    Serial.println(args);
+void do_echo(uCLI::Args args) {
+  Serial.println(args.remainder()); // print entire argument string
 }
 
 void loop() {
   // command list can be global or static local
   static const uCLI::Command commands[] = {
-    { "foo", do_foo }, // run do_foo when "foo" is entered
-    { "bar", do_bar }, // run do_bar when "bar" is entered
+    { "add", do_add }, // call do_add when "add" is entered
+    { "echo", do_echo }, // call do_echo when "echo" is entered
   };
 
   uCLI::run_command(Serial, commands);
@@ -45,11 +50,11 @@ void loop() {
 
 ```
 >help
-Commands: foo, bar
->foo 123
-Doing foo with: 123
->bar abc
-Doing bar with: abc
+Commands: add, echo
+>add 2 3
+2 + 3 = 5
+>echo All the args
+All the args
 ```
 
 ## Dependencies

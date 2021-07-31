@@ -5,26 +5,29 @@ void setup() {
   while (!Serial) {}
 }
 
-void do_foo(const char* args);
-void do_bar(const char* args);
+void do_add(uCLI::Args args);
+void do_echo(uCLI::Args args);
 
 void loop() {
   // command list can be global or static local
   static const uCLI::Command commands[] = {
-    { "foo", do_foo }, // run do_foo when "foo" is entered
-    { "bar", do_bar }, // run do_bar when "bar" is entered
+    { "add", do_add }, // call do_add when "add" is entered
+    { "echo", do_echo }, // call do_echo when "echo" is entered
   };
 
   uCLI::run_command(Serial, commands);
 }
 
-void do_foo(const char* args) {
-    Serial.write("Doing foo with: ");
-    int value = atoi(args);
-    Serial.println(value);
+void do_add(uCLI::Args args) {
+  int a = atoi(args.next());
+  int b = atoi(args.next());
+  Serial.print(a);
+  Serial.print(" + ");
+  Serial.print(b);
+  Serial.print(" = ");
+  Serial.println(a + b);
 }
 
-void do_bar(const char* args) {
-    Serial.write("Doing bar with: ");
-    Serial.println(args);
+void do_echo(uCLI::Args args) {
+  Serial.println(args.remainder());
 }

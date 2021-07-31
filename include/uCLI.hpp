@@ -8,10 +8,21 @@ struct Stream;
 
 namespace uCLI {
 
+class Args {
+private:
+  char* next_;
+
+public:
+  Args(char* args): next_{args} {}
+
+  char* next();
+  char* remainder();
+};
+
 // Function pointer to be called when command string is entered
 struct Command {
   const char* command;
-  void (*callback)(const char*);
+  void (*callback)(Args);
 };
 
 // Read string from stream into buffer up to length bytes

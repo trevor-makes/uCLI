@@ -73,12 +73,12 @@ char* split_at_space(char* input) {
 
 void parse_command(Stream& stream, char* input, const Command commands[], uint8_t length) {
   input = trim_space(input);
-  char* message = split_at_space(input);
+  Args args = split_at_space(input);
 
   // Look for match in command list
   for (uint8_t i = 0; i < length; ++i) {
     if (strcmp(input, commands[i].command) == 0) {
-      commands[i].callback(message);
+      commands[i].callback(args);
       return;
     }
   }
@@ -92,6 +92,16 @@ void parse_command(Stream& stream, char* input, const Command commands[], uint8_
     stream.write(commands[i].command);
   }
   stream.write("\n");
+}
+
+char* Args::next() {
+  char* next = next_;
+  next_ = split_at_space(next_);
+  return next;
+}
+
+char* Args::remainder() {
+  return next_;
 }
 
 } // namespace uCLI
