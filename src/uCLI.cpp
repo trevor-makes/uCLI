@@ -7,10 +7,15 @@
 
 namespace uCLI {
 
-void read_command(Stream& stream, char* buffer, uint8_t length) {
+void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn) {
   uint8_t i = 0;
 
   do {
+    // Call user idle function once per loop
+    if (idle_fn) {
+      idle_fn();
+    }
+
     // Get next key press
     int input = uANSI::read_key(stream);
     if (input == -1) {
