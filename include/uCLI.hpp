@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 
+// Forward declaration of Arduino Stream type
 struct Stream;
 
 namespace uCLI {
@@ -33,27 +34,27 @@ struct Command {
 void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn);
 
 // Read string from stream into buffer
-template <typename T, uint8_t L>
-void read_command(T& stream, char (&buffer)[L], IdleFn idle_fn = nullptr) {
-    read_command(stream, buffer, L, idle_fn);
+template <typename T, uint8_t BUF_LEN>
+void read_command(T& stream, char (&buffer)[BUF_LEN], IdleFn idle_fn = nullptr) {
+    read_command(stream, buffer, BUF_LEN, idle_fn);
 }
 
 // Attempt to match input to list of commands
 void parse_command(Stream& stream, char* input, const Command* commands, uint8_t length);
 
 // Attempt to match input to list of commands
-template <typename T, uint8_t L>
-void parse_command(T& stream, char* input, const Command (&commands)[L]) {
-    parse_command(stream, input, commands, L);
+template <typename T, uint8_t CMD_LEN>
+void parse_command(T& stream, char* input, const Command (&commands)[CMD_LEN]) {
+    parse_command(stream, input, commands, CMD_LEN);
 }
 
 // Display prompt and execute command from stream
-template <uint8_t N = 128, typename T, uint8_t L>
-void run_command(T& stream, const Command (&commands)[L], IdleFn idle_fn = nullptr) {
-  char input[N];
+template <uint8_t BUF_LEN = 80, typename T, uint8_t CMD_LEN>
+void run_command(T& stream, const Command (&commands)[CMD_LEN], IdleFn idle_fn = nullptr) {
+  char input[BUF_LEN];
   stream.write('>');
-  read_command(stream, input, N, idle_fn);
-  parse_command(stream, input, commands, L);
+  read_command(stream, input, BUF_LEN, idle_fn);
+  parse_command(stream, input, commands, CMD_LEN);
 }
 
 } // namespace uCLI
