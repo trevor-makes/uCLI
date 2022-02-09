@@ -15,7 +15,10 @@ private:
 
 public:
   Args(char* args): next_{args} {}
-  Args(): next_{""} {}
+
+  // Casting const literal "" to char* is a necessary evil for now so that we
+  // can avoid dealing with nullptr; the empty string will NOT be mutated
+  Args(): next_{const_cast<char*>("")} {}
 
   char* next();
   char* remainder();
