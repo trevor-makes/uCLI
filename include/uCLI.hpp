@@ -20,8 +20,8 @@ public:
   // can avoid dealing with nullptr; the empty string will NOT be mutated
   Args(): next_{const_cast<char*>("")} {}
 
-  char* next();
-  char* remainder();
+  const char* next();
+  bool has_next() { return *next_ != '\0'; }
 };
 
 using CommandFn = void (*)(Args);
@@ -39,7 +39,7 @@ void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn);
 // Read string from stream into buffer
 template <typename T, uint8_t BUF_LEN>
 void read_command(T& stream, char (&buffer)[BUF_LEN], IdleFn idle_fn = nullptr) {
-    read_command(stream, buffer, BUF_LEN, idle_fn);
+  read_command(stream, buffer, BUF_LEN, idle_fn);
 }
 
 // Attempt to match input to list of commands
@@ -48,7 +48,7 @@ void parse_command(Stream& stream, char* input, const Command* commands, uint8_t
 // Attempt to match input to list of commands
 template <typename T, uint8_t CMD_LEN>
 void parse_command(T& stream, char* input, const Command (&commands)[CMD_LEN]) {
-    parse_command(stream, input, commands, CMD_LEN);
+  parse_command(stream, input, commands, CMD_LEN);
 }
 
 // Display prompt and execute command from stream

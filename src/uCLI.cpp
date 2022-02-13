@@ -63,11 +63,11 @@ char* trim_space(char* input) {
   return input;
 }
 
-char* split_at_space(char* input) {
+char* split_at_separator(char* input, char separator) {
   // Scan until end of string
   while (*input != '\0') {
-    // Replace space with null and return
-    if (*input == ' ') {
+    // Replace separator with null and return
+    if (*input == separator) {
       *input++ = '\0';
       return trim_space(input);
     }
@@ -78,7 +78,7 @@ char* split_at_space(char* input) {
 
 void parse_command(Stream& stream, char* input, const Command commands[], uint8_t length) {
   input = trim_space(input);
-  Args args = split_at_space(input);
+  Args args = split_at_separator(input, ' ');
 
   // Look for match in command list
   for (uint8_t i = 0; i < length; ++i) {
@@ -99,14 +99,16 @@ void parse_command(Stream& stream, char* input, const Command commands[], uint8_
   stream.write("\n");
 }
 
-char* Args::next() {
+const char* Args::next() {
   char* next = next_;
-  next_ = split_at_space(next_);
+  if (*next == '\"') {
+    next_ = split_at_separator(++next, '\"');
+  } else if (*next == '\'') {
+    next_ = split_at_separator(++next, '\'');
+  } else {
+    next_ = split_at_separator(next, ' ');
+  }
   return next;
-}
-
-char* Args::remainder() {
-  return next_;
 }
 
 } // namespace uCLI
