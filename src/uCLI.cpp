@@ -9,6 +9,7 @@ namespace uCLI {
 
 void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn) {
   uint8_t i = 0;
+  uint8_t end = 0;
 
   do {
     // Call user idle function once per loop
@@ -22,7 +23,27 @@ void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn) 
       continue;
     }
 
-    // Handle special keys (arrows, etc)
+    // Handle arrow keys (what about up/down, home/end?)
+    if (input == uANSI::KEY_LEFT) {
+      if (i > 0) {
+        // Move cursor left
+        stream.write("\e[D");
+        --i;
+      }
+      continue;
+    }
+
+    if (input == uANSI::KEY_RIGHT) {
+      if (i < end) {
+        // Move cursor right
+        stream.write("\e[C");
+        ++i;
+      }
+      continue;
+    }
+
+    // Ignore escape and other special keys
+    // TODO what about non-printable ASCII keys?
     if (input == '\e' || input > 0xFF) {
       continue;
     }
@@ -30,16 +51,21 @@ void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn) 
     // Handle backspace and delete
     if (input == '\x08' || input == '\x7F') {
       if (i > 0) {
-        // Delete last character
-        stream.write("\e[D\e[X");
+        // Move cursor left and delete
+        stream.write("\e[D\e[P");
+        // Shift following characters left
+        for (uint8_t j = i; j < end; ++j) {
+          buffer[j-1] = buffer[j];
+        }
         --i;
+        --end;
       }
       continue;
     }
 
     // Handle enter/return
     if (input == '\n' || input == '\r') {
-      if (i > 0) {
+      if (end > 0) {
         // Exit loop and execute command
         break;
       } else {
@@ -47,13 +73,23 @@ void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn) 
       }
     }
 
+    if (end > i) {
+      // Shift following characters right
+      for (uint8_t j = end; j > i; --j) {
+        buffer[j] = buffer[j-1];
+      }
+      // Insert character
+      stream.write("\e[@");
+    }
     // Echo and record input
     stream.write(input);
-    buffer[i++] = input;
-  } while (i < length);
+    buffer[i] = input;
+    i++;
+    end++;
+  } while (end < length);
 
   stream.write("\n");
-  buffer[i] = '\0';
+  buffer[end] = '\0';
 }
 
 char* trim_space(char* input) {
