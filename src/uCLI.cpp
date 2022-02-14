@@ -8,7 +8,7 @@
 namespace uCLI {
 
 void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn) {
-  uint8_t i = 0;
+  uint8_t cur = 0;
   uint8_t end = 0;
 
   for (;;) {
@@ -26,33 +26,33 @@ void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn) 
     // Handle arrow keys
     // TODO up/down, home/end
     if (input == uANSI::KEY_LEFT) {
-      if (i > 0) {
+      if (cur > 0) {
         // Move cursor left
         stream.write("\e[D");
-        --i;
+        --cur;
       }
       continue;
     }
 
     if (input == uANSI::KEY_RIGHT) {
-      if (i < end) {
+      if (cur < end) {
         // Move cursor right
         stream.write("\e[C");
-        ++i;
+        ++cur;
       }
       continue;
     }
 
     // Handle backspace and delete
     if (input == '\x08' || input == '\x7F') {
-      if (i > 0) {
+      if (cur > 0) {
         // Move cursor left and delete
         stream.write("\e[D\e[P");
         // Shift following characters left
-        for (uint8_t j = i; j < end; ++j) {
-          buffer[j-1] = buffer[j];
+        for (uint8_t i = cur; i < end; ++i) {
+          buffer[i - 1] = buffer[i];
         }
-        --i;
+        --cur;
         --end;
       }
       continue;
@@ -82,10 +82,10 @@ void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn) 
       continue;
     }
 
-    if (i < end) {
+    if (cur < end) {
       // Shift following characters right
-      for (uint8_t j = end; j > i; --j) {
-        buffer[j] = buffer[j-1];
+      for (uint8_t i = end; i > cur; --i) {
+        buffer[i] = buffer[i - 1];
       }
       // Insert character
       stream.write("\e[@");
@@ -93,8 +93,8 @@ void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn) 
 
     // Echo and record input
     stream.write(input);
-    buffer[i] = input;
-    i++;
+    buffer[cur] = input;
+    cur++;
     end++;
   }
 }
