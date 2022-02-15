@@ -59,7 +59,8 @@ void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn) 
     }
 
     // Handle enter/return
-    if (input == '\n' || input == '\r') {
+    // NOTE uANSI transforms CR and CRLF to LF
+    if (input == '\n') {
       if (end > 0) {
         // Exit loop and execute command
         stream.write("\n");
