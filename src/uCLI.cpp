@@ -7,7 +7,7 @@
 
 namespace uCLI {
 
-void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn) {
+void read_command(StreamEx& stream, char* buffer, uint8_t length, IdleFn idle_fn) {
   uint8_t cur = 0;
   uint8_t end = 0;
 
@@ -18,7 +18,7 @@ void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn) 
     }
 
     // Get next key press
-    int input = uANSI::read_key(stream);
+    int input = stream.read();
     if (input == -1) {
       continue;
     }
@@ -120,7 +120,7 @@ char* split_at_separator(char* input, char separator) {
   return input;
 }
 
-void parse_command(Stream& stream, char* input, const Command commands[], uint8_t length) {
+void parse_command(StreamEx& stream, char* input, const Command commands[], uint8_t length) {
   input = trim_space(input);
   Args args = split_at_separator(input, ' ');
 

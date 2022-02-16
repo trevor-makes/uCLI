@@ -2,12 +2,13 @@
 
 #pragma once
 
+#include "uANSI.hpp"
+
 #include <stdint.h>
 
-// Forward declaration of Arduino Stream type
-struct Stream;
-
 namespace uCLI {
+
+using uANSI::StreamEx;
 
 class Args {
 private:
@@ -34,26 +35,26 @@ struct Command {
 };
 
 // Read string from stream into buffer up to length bytes
-void read_command(Stream& stream, char* buffer, uint8_t length, IdleFn idle_fn);
+void read_command(StreamEx& stream, char* buffer, uint8_t length, IdleFn idle_fn);
 
 // Read string from stream into buffer
 template <uint8_t BUF_LEN>
-void read_command(Stream& stream, char (&buffer)[BUF_LEN], IdleFn idle_fn = nullptr) {
+void read_command(StreamEx& stream, char (&buffer)[BUF_LEN], IdleFn idle_fn = nullptr) {
   read_command(stream, buffer, BUF_LEN, idle_fn);
 }
 
 // Attempt to match input to list of commands
-void parse_command(Stream& stream, char* input, const Command* commands, uint8_t length);
+void parse_command(StreamEx& stream, char* input, const Command* commands, uint8_t length);
 
 // Attempt to match input to list of commands
 template <uint8_t CMD_LEN>
-void parse_command(Stream& stream, char* input, const Command (&commands)[CMD_LEN]) {
+void parse_command(StreamEx& stream, char* input, const Command (&commands)[CMD_LEN]) {
   parse_command(stream, input, commands, CMD_LEN);
 }
 
 // Display prompt and execute command from stream
 template <uint8_t BUF_LEN = 80, uint8_t CMD_LEN>
-void run_command(Stream& stream, const Command (&commands)[CMD_LEN], IdleFn idle_fn = nullptr) {
+void run_command(StreamEx& stream, const Command (&commands)[CMD_LEN], IdleFn idle_fn = nullptr) {
   char input[BUF_LEN];
   stream.write('>');
   read_command(stream, input, BUF_LEN, idle_fn);
