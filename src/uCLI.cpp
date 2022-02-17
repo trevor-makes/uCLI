@@ -27,8 +27,7 @@ void read_command(StreamEx& stream, char* buffer, uint8_t length, IdleFn idle_fn
     // TODO up/down, home/end
     if (input == uANSI::KEY_LEFT) {
       if (cur > 0) {
-        // Move cursor left
-        stream.write("\e[D");
+        stream.cursor_left();
         --cur;
       }
       continue;
@@ -36,18 +35,17 @@ void read_command(StreamEx& stream, char* buffer, uint8_t length, IdleFn idle_fn
 
     if (input == uANSI::KEY_RIGHT) {
       if (cur < end) {
-        // Move cursor right
-        stream.write("\e[C");
+        stream.cursor_right();
         ++cur;
       }
       continue;
     }
 
-    // Handle backspace and delete
+    // Handle backspace and delete (as backspace)
     if (input == '\x08' || input == '\x7F') {
       if (cur > 0) {
-        // Move cursor left and delete
-        stream.write("\e[D\e[P");
+        stream.cursor_left();
+        stream.delete_char();
         // Shift following characters left
         for (uint8_t i = cur; i < end; ++i) {
           buffer[i - 1] = buffer[i];
@@ -63,7 +61,7 @@ void read_command(StreamEx& stream, char* buffer, uint8_t length, IdleFn idle_fn
     if (input == '\n') {
       if (end > 0) {
         // Exit loop and execute command
-        stream.write("\n");
+        stream.write('\n');
         buffer[end] = '\0';
         return;
       } else {
@@ -88,8 +86,7 @@ void read_command(StreamEx& stream, char* buffer, uint8_t length, IdleFn idle_fn
       for (uint8_t i = end; i > cur; --i) {
         buffer[i] = buffer[i - 1];
       }
-      // Insert character
-      stream.write("\e[@");
+      stream.insert_char();
     }
 
     // Echo and record input
@@ -140,7 +137,7 @@ void parse_command(StreamEx& stream, char* input, const Command commands[], uint
     }
     stream.write(commands[i].command);
   }
-  stream.write("\n");
+  stream.write('\n');
 }
 
 const char* Args::next() {
