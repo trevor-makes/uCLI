@@ -23,8 +23,7 @@ void read_command(StreamEx& stream, char* buffer, uint8_t length, IdleFn idle_fn
       continue;
     }
 
-    // Handle arrow keys
-    // TODO up/down, home/end
+    // Left arrow moves cursor left
     if (input == uANSI::KEY_LEFT) {
       if (cur > 0) {
         stream.cursor_left();
@@ -33,10 +32,29 @@ void read_command(StreamEx& stream, char* buffer, uint8_t length, IdleFn idle_fn
       continue;
     }
 
+    // Right arrow moves cursor right
     if (input == uANSI::KEY_RIGHT) {
       if (cur < end) {
         stream.cursor_right();
         ++cur;
+      }
+      continue;
+    }
+
+    // Home and up arrow move cursor far left
+    if (input == uANSI::KEY_HOME || input == uANSI::KEY_UP) {
+      if (cur > 0) {
+        stream.cursor_left(cur);
+        cur = 0;
+      }
+      continue;
+    }
+
+    // End and down arrow move cursor far right
+    if (input == uANSI::KEY_END || input == uANSI::KEY_DOWN) {
+      if (cur < end) {
+        stream.cursor_right(end - cur);
+        cur = end;
       }
       continue;
     }
