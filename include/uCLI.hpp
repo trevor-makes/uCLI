@@ -55,7 +55,7 @@ void parse_command(StreamEx& stream, char* input, const Command (&commands)[CMD_
 // Display prompt and execute command from stream
 template <uint8_t BUF_LEN = 80, uint8_t CMD_LEN>
 void run_command(StreamEx& stream, const Command (&commands)[CMD_LEN], IdleFn idle_fn = nullptr) {
-  char input[BUF_LEN];
+  static char input[BUF_LEN];
   stream.write('>');
   read_command(stream, input, BUF_LEN, idle_fn);
   parse_command(stream, input, commands, CMD_LEN);
