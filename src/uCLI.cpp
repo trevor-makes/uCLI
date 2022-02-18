@@ -41,8 +41,8 @@ void read_command(StreamEx& stream, char* buffer, uint8_t length, IdleFn idle_fn
       continue;
     }
 
-    // Home and up arrow move cursor far left
-    if (input == uANSI::KEY_HOME || input == uANSI::KEY_UP) {
+    // Home moves cursor far left
+    if (input == uANSI::KEY_HOME) {
       if (cur > 0) {
         stream.cursor_left(cur);
         cur = 0;
@@ -50,8 +50,8 @@ void read_command(StreamEx& stream, char* buffer, uint8_t length, IdleFn idle_fn
       continue;
     }
 
-    // End and down arrow move cursor far right
-    if (input == uANSI::KEY_END || input == uANSI::KEY_DOWN) {
+    // End moves cursor far right
+    if (input == uANSI::KEY_END) {
       if (cur < end) {
         stream.cursor_right(end - cur);
         cur = end;
