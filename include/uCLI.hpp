@@ -23,6 +23,17 @@ public:
 
   const char* next();
   bool has_next() { return *next_ != '\0'; }
+
+  template <uint8_t N>
+  uint8_t get(const char* (&argv)[N]) {
+    for (uint8_t i = 0; i < N; ++i) {
+      if (!has_next()) {
+        return i;
+      }
+      argv[i] = next();
+    }
+    return N;
+  }
 };
 
 using CommandFn = void (*)(Args);
