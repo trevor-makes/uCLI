@@ -23,12 +23,16 @@ public:
 
   const char* next();
   bool has_next() { return *next_ != '\0'; }
+  bool is_string() { return *next_ == '\"' || *next_ == '\''; }
 
   template <uint8_t N>
-  uint8_t get(const char* (&argv)[N]) {
+  uint8_t get(const char* (&argv)[N], bool are_strings[] = nullptr) {
     for (uint8_t i = 0; i < N; ++i) {
       if (!has_next()) {
         return i;
+      }
+      if (are_strings != nullptr) {
+        are_strings[i] = is_string();
       }
       argv[i] = next();
     }
