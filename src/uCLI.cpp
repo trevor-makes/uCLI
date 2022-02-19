@@ -66,7 +66,6 @@ void read_command(StreamEx& stream, char* buffer, uint8_t length, IdleFn idle_fn
     case '\n': // NOTE uANSI transforms \r and \r\n to \n
       if (end > 0) {
         // Exit loop and execute command
-        stream.write('\n');
         buffer[end] = '\0';
         return;
       } else {

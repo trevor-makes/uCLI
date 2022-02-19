@@ -73,6 +73,7 @@ void run_command(StreamEx& stream, const Command (&commands)[CMD_LEN], IdleFn id
   static char input[BUF_LEN];
   stream.write('>');
   read_command(stream, input, BUF_LEN, idle_fn);
+  stream.write('\n');
   parse_command(stream, input, commands, CMD_LEN);
 }
 
