@@ -25,13 +25,13 @@ bool Cursor::try_right() {
   }
 }
 
-uint8_t Cursor::jump_home() {
+uint8_t Cursor::seek_home() {
   uint8_t spaces = cursor_;
   cursor_ = 0;
   return spaces;
 }
 
-uint8_t Cursor::jump_end() {
+uint8_t Cursor::seek_end() {
   uint8_t spaces = length_ - cursor_;
   cursor_ = length_;
   return spaces;
@@ -98,11 +98,11 @@ void read_command(StreamEx& stream, Cursor& cursor, IdleFn idle_fn) {
       continue;
     case uANSI::KEY_HOME:
       // Move cursor far left
-      stream.cursor_left(cursor.jump_home());
+      stream.cursor_left(cursor.seek_home());
       continue;
     case uANSI::KEY_END:
       // Move cursor far right
-      stream.cursor_right(cursor.jump_end());
+      stream.cursor_right(cursor.seek_end());
       continue;
     case '\x08': // ASCII backspace
     case '\x7F': // ASCII delete (not ANSI delete \e[3~)

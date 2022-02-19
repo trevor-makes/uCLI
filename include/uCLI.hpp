@@ -42,9 +42,9 @@ public:
 
 class Cursor {
   char* buffer_;
-  uint8_t limit_;
-  uint8_t cursor_ = 0;
-  uint8_t length_ = 0;
+  uint8_t limit_; // Maximum number of characters, excluding null terminator
+  uint8_t cursor_ = 0; // Index where next character will be inserted
+  uint8_t length_ = 0; // Number of characters currently in buffer
 
 public:
   template <uint8_t N>
@@ -57,13 +57,23 @@ public:
 
   uint8_t length() const { return length_; }
 
+  // Attempt to insert at cursor, returning false if full
   bool try_insert(char input);
+
+  // Attempt to delete at cursor, returning false if nothing to delete
   bool try_delete();
 
+  // Attempt to move cursor left, returning false if already at margin
   bool try_left();
+
+  // Attempt to move cursor right, returning false if already at margin
   bool try_right();
-  uint8_t jump_home();
-  uint8_t jump_end();
+
+  // Move cursor to left margin, returning number of spaces moved
+  uint8_t seek_home();
+
+  // Move cursor to right margin, returning number of spaces moved
+  uint8_t seek_end();
 };
 
 using CommandFn = void (*)(Args);
