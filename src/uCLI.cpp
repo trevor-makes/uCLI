@@ -153,13 +153,12 @@ char* split_at_separator(char* input, char separator) {
   return input;
 }
 
-void parse_command(StreamEx& stream, char* input, const Command commands[], uint8_t length) {
-  input = trim_space(input);
-  Args args = split_at_separator(input, ' ');
+void parse_command(StreamEx& stream, Args args, const Command commands[], uint8_t length) {
+  const char* command = args.next();
 
   // Look for match in command list
   for (uint8_t i = 0; i < length; ++i) {
-    if (strcmp(input, commands[i].command) == 0) {
+    if (strcmp(command, commands[i].command) == 0) {
       commands[i].callback(args);
       return;
     }

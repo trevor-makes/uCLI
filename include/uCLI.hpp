@@ -79,12 +79,12 @@ struct Command {
 void read_command(StreamEx& stream, Cursor& cursor, IdleFn idle_fn = nullptr);
 
 // Attempt to match input to list of commands
-void parse_command(StreamEx& stream, char* input, const Command* commands, uint8_t length);
+void parse_command(StreamEx& stream, Args args, const Command* commands, uint8_t length);
 
 // Attempt to match input to list of commands
 template <uint8_t CMD_LEN>
-void parse_command(StreamEx& stream, char* input, const Command (&commands)[CMD_LEN]) {
-  parse_command(stream, input, commands, CMD_LEN);
+void parse_command(StreamEx& stream, Args args, const Command (&commands)[CMD_LEN]) {
+  parse_command(stream, args, commands, CMD_LEN);
 }
 
 // Display prompt and execute command from stream
@@ -95,7 +95,8 @@ void run_command(StreamEx& stream, const Command (&commands)[CMD_LEN], IdleFn id
   Cursor cursor{buffer};
   read_command(stream, cursor, idle_fn);
   stream.write('\n');
-  parse_command(stream, buffer, commands, CMD_LEN);
+  Args args{buffer};
+  parse_command(stream, args, commands, CMD_LEN);
 }
 
 } // namespace uCLI
