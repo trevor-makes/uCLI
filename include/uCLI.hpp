@@ -40,6 +40,32 @@ public:
   }
 };
 
+class Cursor {
+  char* buffer_;
+  uint8_t limit_;
+  uint8_t cursor_ = 0;
+  uint8_t length_ = 0;
+
+public:
+  template <uint8_t N>
+  Cursor(char (&buffer)[N]): Cursor(buffer, N) {}
+  Cursor(char* buffer, uint8_t size): buffer_{buffer}, limit_{uint8_t(size - 1)} { buffer_[0] = '\0'; }
+
+  // Prevent copying
+  Cursor(const Cursor&) = delete;
+  Cursor& operator=(const Cursor&) = delete;
+
+  uint8_t length() const { return length_; }
+
+  bool try_insert(char input);
+  bool try_delete();
+
+  bool try_left();
+  bool try_right();
+  uint8_t jump_home();
+  uint8_t jump_end();
+};
+
 using CommandFn = void (*)(Args);
 using IdleFn = void (*)();
 
@@ -49,14 +75,8 @@ struct Command {
   CommandFn callback;
 };
 
-// Read string from stream into buffer up to length bytes
-void read_command(StreamEx& stream, char* buffer, uint8_t length, IdleFn idle_fn);
-
 // Read string from stream into buffer
-template <uint8_t BUF_LEN>
-void read_command(StreamEx& stream, char (&buffer)[BUF_LEN], IdleFn idle_fn = nullptr) {
-  read_command(stream, buffer, BUF_LEN, idle_fn);
-}
+void read_command(StreamEx& stream, Cursor& cursor, IdleFn idle_fn = nullptr);
 
 // Attempt to match input to list of commands
 void parse_command(StreamEx& stream, char* input, const Command* commands, uint8_t length);
@@ -70,11 +90,12 @@ void parse_command(StreamEx& stream, char* input, const Command (&commands)[CMD_
 // Display prompt and execute command from stream
 template <uint8_t BUF_LEN = 80, uint8_t CMD_LEN>
 void run_command(StreamEx& stream, const Command (&commands)[CMD_LEN], IdleFn idle_fn = nullptr) {
-  static char input[BUF_LEN];
+  static char buffer[BUF_LEN];
   stream.write('>');
-  read_command(stream, input, BUF_LEN, idle_fn);
+  Cursor cursor{buffer};
+  read_command(stream, cursor, idle_fn);
   stream.write('\n');
-  parse_command(stream, input, commands, CMD_LEN);
+  parse_command(stream, buffer, commands, CMD_LEN);
 }
 
 } // namespace uCLI
