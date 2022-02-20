@@ -56,6 +56,12 @@ public:
   Cursor& operator=(const Cursor&) = delete;
 
   uint8_t length() const { return length_; }
+  const char* contents() const { return buffer_; }
+
+  void clear() { cursor_ = length_ = 0; }
+
+  // Insert at cursor up to size chars from input, returning count
+  uint8_t try_insert(const char* input, uint8_t size = 255);
 
   // Attempt to insert at cursor, returning false if full
   bool try_insert(char input);
@@ -76,6 +82,23 @@ public:
   uint8_t seek_end();
 };
 
+class History {
+  char* buffer_;
+  uint8_t size_;
+  uint8_t entries_ = 0;
+
+public:
+  template <uint8_t N>
+  History(char (&buffer)[N]): History(buffer, N) {}
+  History(char* buffer, uint8_t size): buffer_{buffer}, size_{size} {}
+  History(): buffer_{nullptr}, size_{0} {}
+
+  uint8_t entries() const { return entries_; }
+
+  void push_from(const Cursor& cursor);
+  void copy_to(uint8_t entry, Cursor& cursor);
+};
+
 using CommandFn = void (*)(Args);
 using IdleFn = void (*)();
 
@@ -86,7 +109,7 @@ struct Command {
 };
 
 // Read string from stream into buffer
-void read_command(StreamEx& stream, Cursor& cursor, IdleFn idle_fn = nullptr);
+void read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idle_fn = nullptr);
 
 // Attempt to match input to list of commands
 void parse_command(StreamEx& stream, Args args, const Command* commands, uint8_t length);
@@ -98,13 +121,18 @@ void parse_command(StreamEx& stream, Args args, const Command (&commands)[CMD_LE
 }
 
 // Display prompt and execute command from stream
-template <uint8_t BUF_LEN = 80, uint8_t CMD_LEN>
+template <uint8_t BUF_LEN = 80, uint8_t HIST_LEN = 80, uint8_t CMD_LEN>
 void run_command(StreamEx& stream, const Command (&commands)[CMD_LEN], IdleFn idle_fn = nullptr) {
   static char buffer[BUF_LEN];
+  static char hist_buf[HIST_LEN];
+  static History history{hist_buf};
+
   stream.write('>');
   Cursor cursor{buffer};
-  read_command(stream, cursor, idle_fn);
+  read_command(stream, cursor, history, idle_fn);
+  history.push_from(cursor);
   stream.write('\n');
+
   Args args{buffer};
   parse_command(stream, args, commands, CMD_LEN);
 }

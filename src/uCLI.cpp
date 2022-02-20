@@ -37,8 +37,32 @@ uint8_t Cursor::seek_end() {
   return spaces;
 }
 
+uint8_t Cursor::try_insert(const char* input, uint8_t size) {
+  // Limit size to space available in Cursor
+  size = min(size, limit_ - length_);
+
+  // Limit size to null terminator in input
+  for (uint8_t i = 0; i < size; ++i) {
+    if (input[i] == '\0') {
+      size = i;
+    }
+  }
+
+  if (size > 0) {
+    // Move what follows the cursor and copy input into hole
+    memmove(buffer_ + cursor_ + size, buffer_ + cursor_, length_ - cursor_);
+    memcpy(buffer_, input, size);
+    cursor_ += size;
+    length_ += size;
+    buffer_[length_] = '\0';
+  }
+
+  return size;
+}
+
 bool Cursor::try_insert(char input) {
-  if (length_ >= limit_) {
+  // Reject if buffer is full or input is null
+  if (length_ >= limit_ || input == '\0') {
     return false;
   }
 
@@ -72,7 +96,62 @@ bool Cursor::try_delete() {
   return true;
 }
 
-void read_command(StreamEx& stream, Cursor& cursor, IdleFn idle_fn) {
+void History::push_from(const Cursor& cursor) {
+  if (size_ == 0) {
+    return;
+  }
+
+  // Limit entry size to absolute size of history buffer (excluding prefix)
+  uint8_t size = min(cursor.length(), size_ - 1);
+  uint8_t available = size_ - (size + 1);
+
+  // Determine how many old entries will be overwritten
+  uint8_t old_size = 0;
+  for (uint8_t entry = 0; entry < entries_; ++entry) {
+    uint8_t entry_size = 1 + buffer_[old_size]; // prefix byte plus size of entry
+    if (old_size + entry_size > available) {
+      // Drop this and any remaining entries
+      entries_ = entry;
+      break;
+    }
+    old_size += entry_size;
+  }
+
+  // Shift old entries back and copy new entry at beginning
+  memmove(buffer_ + size + 1, buffer_, old_size);
+  memcpy(buffer_ + 1, cursor.contents(), size);
+  buffer_[0] = size;
+  ++entries_;
+}
+
+void History::copy_to(uint8_t entry, Cursor& cursor) {
+  if (entry >= entries_) {
+    return;
+  }
+
+  // Skip forward `entry` list entries
+  uint8_t index = 0;
+  for (; entry > 0; --entry) {
+    index += 1 + buffer_[index]; // skip prefix byte plus size of entry
+  }
+
+  // Copy entry into cursor
+  cursor.clear();
+  uint8_t size = buffer_[index];
+  const char* offset = buffer_ + index + 1;
+  cursor.try_insert(offset, size);
+}
+
+// Move cursor far left and delete line
+inline void clear_line(StreamEx& stream, Cursor& cursor) {
+  stream.cursor_left(cursor.seek_home());
+  stream.delete_char(cursor.length());
+  cursor.clear();
+}
+
+void read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idle_fn) {
+  uint8_t hist_index = 0;
+
   for (;;) {
     // Call user idle function once per loop
     if (idle_fn) {
@@ -104,6 +183,23 @@ void read_command(StreamEx& stream, Cursor& cursor, IdleFn idle_fn) {
       // Move cursor far right
       stream.cursor_right(cursor.seek_end());
       continue;
+    case uANSI::KEY_UP:
+      if (hist_index < history.entries()) {
+        clear_line(stream, cursor);
+        // Copy history entry into buffer
+        history.copy_to(hist_index++, cursor);
+        stream.print(cursor.contents());
+      }
+      continue;
+    case uANSI::KEY_DOWN:
+      clear_line(stream, cursor);
+      hist_index = hist_index > 0 ? hist_index - 1 : 0;
+      if (hist_index > 0) {
+        // Copy history entry into buffer
+        history.copy_to(hist_index - 1, cursor);
+        stream.print(cursor.contents());
+      }
+      continue;
     case '\x08': // ASCII backspace
     case '\x7F': // ASCII delete (not ANSI delete \e[3~)
       if (cursor.try_delete()) {
@@ -128,6 +224,8 @@ void read_command(StreamEx& stream, Cursor& cursor, IdleFn idle_fn) {
       if (cursor.try_insert(input)) {
         stream.insert_char();
         stream.write(input);
+        // Reset history index on edit
+        hist_index = 0;
       }
     }
   }
