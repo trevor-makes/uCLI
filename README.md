@@ -4,6 +4,13 @@ uCLI is a simple callback-based command line interface for Arduino projects.
 
 uCLI is designed for Arduino and supports serial connections that implement the Stream interface, like Serial, SoftwareSerial, and SerialUSB. This library is intended to be used with [PlatformIO](https://platformio.org/), but the source files can be manually copied into a project when using the Arduino IDE.
 
+uCLI works fine with the built-in Arduino serial monitor, but other terminals like PuTTY and the PlatformIO serial monitor support additional keyboard commands via ANSI escape sequences:
+
+- backspace works as expected
+- left/right arrows move the cursor and allow insertion
+- home/end move the cursor to the beginning/end of the current line
+- up/down arrows scroll through recently entered commands
+
 To add uCLI to an existing PlatformIO project, modify the `platformio.ini` configuration file as follows:
 
 ```
