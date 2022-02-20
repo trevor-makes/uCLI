@@ -1,5 +1,7 @@
 #include "uCLI.hpp"
 
+uCLI::StreamEx serial_ex{Serial};
+
 void setup() {
   Serial.begin(9600);
   while (!Serial) {}
@@ -15,7 +17,7 @@ void loop() {
     { "echo", do_echo }, // call do_echo when "echo" is entered
   };
 
-  uCLI::run_command(Serial, commands);
+  uCLI::run_command(serial_ex, commands);
 }
 
 void do_add(uCLI::Args args) {
@@ -29,5 +31,5 @@ void do_add(uCLI::Args args) {
 }
 
 void do_echo(uCLI::Args args) {
-  Serial.println(args.remainder());
+  Serial.println(args.next());
 }

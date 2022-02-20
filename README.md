@@ -18,30 +18,16 @@ uCLI is distributed under the [MIT license](LICENSE.txt)
 
 ## Usage
 
-Use the `run_command()` function to display a '>' prompt and wait for input. When the enter key is pressed, the first token in the input will be matched with a `Command` key-value pair and the associated function pointer will be called. Any remaining tokens following the command will be provided as an `Args` parameter. Each call to `run_command()` handles one command and returns, so it should normally be called within a loop.
-
-The `Args` parameter can be used as an iterator by calling `next()` until an empty string is returned. This will return one token at a time, with leading and trailing spaces trimmed away. Alternatively, the `remainder()` function will return all remaining text without splitting or trimming spaces.
+Use the `run_command()` function to display a '>' prompt and block while waiting for input. When the enter key is pressed, the first token in the input will be matched with a `Command` key-value pair and the associated function pointer will be called. If the input does not match a command, the list of commands will be printed instead. Any remaining tokens following a matched command will be provided as an `Args` parameter to that function. Each call to `run_command()` handles one command and returns, so it should normally be called within a loop.
 
 ```
-void do_add(uCLI::Args args) {
-  int a = atoi(args.next()); // get first token following command
-  int b = atoi(args.next()); // get second token following command
-  Serial.print(a);
-  Serial.print(" + ");
-  Serial.print(b);
-  Serial.print(" = ");
-  Serial.println(a + b);
-}
-
-void do_echo(uCLI::Args args) {
-  Serial.println(args.remainder()); // print entire argument string
-}
+uCLI::StreamEx serial_ex{Serial};
 
 void loop() {
   // command list can be global or static local
   static const uCLI::Command commands[] = {
-    { "add", do_add }, // call do_add when "add" is entered
-    { "echo", do_echo }, // call do_echo when "echo" is entered
+    { "iter", test_iter }, // call test_iter when "iter" is entered
+    { "get", test_get }, // call test_get when "get" is entered
   };
 
   uCLI::run_command(Serial, commands);
@@ -50,11 +36,52 @@ void loop() {
 
 ```
 >help
-Commands: add, echo
->add 2 3
-2 + 3 = 5
->echo All the args
-All the args
+Commands: iter, get
+>asdf
+Commands: iter, get
+```
+
+The `Args` parameter can be used as an iterator by calling `next()` until an empty string is returned or `has_next()` returns false. This will return one token at a time, with leading and trailing spaces trimmed away. String arguments may be surrounded with double or single quotes to permit spaces. The `is_string()` method will indicate if the next argument uses quotes.
+
+```
+void test_iter(uCLI::Args args) {
+  while (args.has_next()) {
+    if (args.is_string()) {
+      serial_ex.print("was quoted: [");
+      serial_ex.print(args.next());
+      serial_ex.println("]");
+    } else {
+      serial_ex.print("not quoted: ");
+      serial_ex.println(args.next());
+    }
+  }
+}
+```
+
+```
+>iter one "two 'three' four"
+not quoted: one
+was quoted: [two 'three' four]
+```
+
+Alternatively, the `get()` method will unpack the first N args into an array of pointers:
+
+```
+void test_get(uCLI::Args args) {
+  const char* argv[4];
+  uint8_t argc = args.get(argv);
+  for (uint8_t i = 0; i < argc; ++i) {
+    serial_ex.print(i);
+    serial_ex.print(": ");
+    serial_ex.println(argv[i]);
+  }
+}
+```
+
+```
+>get 'first arg' "second arg"
+0: first arg
+1: second arg
 ```
 
 ## Dependencies
