@@ -90,9 +90,9 @@ bool Cursor::try_delete() {
   }
 
   // Backspace cursor
-  buffer_[length_] = '\0';
   --cursor_;
   --length_;
+  buffer_[length_] = '\0';
   return true;
 }
 
@@ -222,7 +222,9 @@ void read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idl
 
       // Echo inserted character to stream
       if (cursor.try_insert(input)) {
-        stream.insert_char();
+        if (!cursor.at_eol()) {
+          stream.insert_char();
+        }
         stream.write(input);
         // Reset history index on edit
         hist_index = 0;

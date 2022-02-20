@@ -57,6 +57,7 @@ public:
 
   uint8_t length() const { return length_; }
   const char* contents() const { return buffer_; }
+  bool at_eol() const { return cursor_ == length_; }
 
   void clear() { cursor_ = length_ = 0; }
 
