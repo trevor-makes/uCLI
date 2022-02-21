@@ -14,8 +14,8 @@ void setup() {
   while (!Serial) {}
 }
 
-void do_add(StreamEx, Tokens);
-void do_echo(StreamEx, Tokens);
+void do_add(StreamEx&, Tokens);
+void do_echo(StreamEx&, Tokens);
 
 void loop() {
   // command list can be global or static local

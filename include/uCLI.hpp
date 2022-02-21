@@ -47,26 +47,6 @@ public:
     }
     return N;
   }
-
-  // Attempt to match the next argument to a command in the list
-  template <uint8_t CMD_LEN>
-  void dispatch(StreamEx& stream, const Command (&commands)[CMD_LEN]) {
-    const char* input = next();
-
-    // Look for match in command list
-    for (const Command& command : commands) {
-      if (strcmp(input, command.keyword) == 0) {
-        command.callback(stream, *this);
-        return;
-      }
-    }
-
-    // Otherwise, print help message
-    stream.println("Commands:");
-    for (const Command& command : commands) {
-      stream.println(command.keyword);
-    }
-  }
 };
 
 class Cursor {
@@ -156,10 +136,10 @@ public:
   HistoryOwner(): History(buffer_) {}
 };
 
-template <uint8_t BUF_LEN = 80, uint8_t HIST_LEN = 80>
+template <uint8_t BUF_SIZE = 80, uint8_t HIST_SIZE = 80>
 class CLI {
-  CursorOwner<BUF_LEN> cursor_;
-  HistoryOwner<HIST_LEN> history_;
+  CursorOwner<BUF_SIZE> cursor_;
+  HistoryOwner<HIST_SIZE> history_;
   StreamEx& stream_;
 
 public:
@@ -175,18 +155,35 @@ public:
     return read_command(stream_, cursor_, history_, idle_fn);
   }
 
-  template <uint8_t CMD_LEN>
-  void dispatch(Tokens tokens, const Command (&commands)[CMD_LEN]) {
-    tokens.dispatch(stream_, commands);
+  // Attempt to match the next argument to a command in the list
+  template <uint8_t N>
+  bool dispatch(const char* input, Tokens args, const Command (&commands)[N]) {
+    for (const Command& command : commands) {
+      // Run callback function if input matches keyword
+      if (strcmp(input, command.keyword) == 0) {
+        command.callback(stream_, args);
+        return true;
+      }
+    }
+    return false;
   }
 
   // Display prompt and execute command from stream
-  template <uint8_t CMD_LEN>
-  void prompt(const Command (&commands)[CMD_LEN], IdleFn idle_fn = nullptr) {
-    stream_.write('>');
+  template <uint8_t N>
+  void prompt(const Command (&commands)[N], IdleFn idle_fn = nullptr) {
+    // Block while waiting for command entry
+    stream_.print('>');
     Tokens tokens = read(nullptr, idle_fn);
-    stream_.write('\n');
-    dispatch(tokens, commands);
+    stream_.print('\n');
+
+    // Attempt to dispatch, othewise print help message
+    const char* command = tokens.next();
+    if (!dispatch(command, tokens, commands)) {
+      stream_.println("Commands:");
+      for (const Command& command : commands) {
+        stream_.println(command.keyword);
+      }
+    }
   }
 };
 
