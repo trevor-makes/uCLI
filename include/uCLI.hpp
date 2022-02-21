@@ -10,6 +10,15 @@ namespace uCLI {
 
 using uANSI::StreamEx;
 
+using CommandFn = void (*)(StreamEx&, class Args);
+using IdleFn = void (*)();
+
+// Function pointer to be called when command string is entered
+struct Command {
+  const char* keyword;
+  CommandFn callback;
+};
+
 class Args {
 private:
   char* next_;
@@ -37,6 +46,26 @@ public:
       argv[i] = next();
     }
     return N;
+  }
+
+  // Attempt to match the next argument to a command in the list
+  template <uint8_t CMD_LEN>
+  void dispatch(StreamEx& stream, const Command (&commands)[CMD_LEN]) {
+    const char* input = next();
+
+    // Look for match in command list
+    for (const Command& command : commands) {
+      if (strcmp(input, command.keyword) == 0) {
+        command.callback(stream, *this);
+        return;
+      }
+    }
+
+    // Otherwise, print help message
+    stream.println("Commands:");
+    for (const Command& command : commands) {
+      stream.println(command.keyword);
+    }
   }
 };
 
@@ -104,26 +133,8 @@ public:
   void copy_to(uint8_t entry, Cursor& cursor);
 };
 
-using CommandFn = void (*)(Args);
-using IdleFn = void (*)();
-
-// Function pointer to be called when command string is entered
-struct Command {
-  const char* command;
-  CommandFn callback;
-};
-
 // Read string from stream into buffer
-void read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idle_fn = nullptr);
-
-// Attempt to match input to list of commands
-void parse_command(StreamEx& stream, Args args, const Command* commands, uint8_t length);
-
-// Attempt to match input to list of commands
-template <uint8_t CMD_LEN>
-void parse_command(StreamEx& stream, Args args, const Command (&commands)[CMD_LEN]) {
-  parse_command(stream, args, commands, CMD_LEN);
-}
+Args read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idle_fn = nullptr);
 
 template <uint8_t SIZE>
 class CursorOwner : public Cursor {
@@ -150,15 +161,13 @@ public:
 
   // Display prompt and execute command from stream
   template <uint8_t CMD_LEN>
-  void run_command(const Command (&commands)[CMD_LEN], IdleFn idle_fn = nullptr) {
+  void prompt(const Command (&commands)[CMD_LEN], IdleFn idle_fn = nullptr) {
     stream_.write('>');
     cursor_.clear();
-    read_command(stream_, cursor_, history_, idle_fn);
-    history_.push_from(cursor_);
+    Args args = read_command(stream_, cursor_, history_, idle_fn);
     stream_.write('\n');
 
-    Args args{cursor_.contents()};
-    parse_command(stream_, args, commands, CMD_LEN);
+    args.dispatch(stream_, commands);
   }
 };
 

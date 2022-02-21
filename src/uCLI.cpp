@@ -149,7 +149,7 @@ inline void clear_line(StreamEx& stream, Cursor& cursor) {
   cursor.clear();
 }
 
-void read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idle_fn) {
+Args read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idle_fn) {
   uint8_t hist_index = 0;
 
   for (;;) {
@@ -210,7 +210,8 @@ void read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idl
     case '\n': // NOTE uANSI transforms \r and \r\n to \n
       if (cursor.length() > 0) {
         // Exit loop and execute command if line is not empty
-        return;
+        history.push_from(cursor);
+        return Args(cursor.contents());
       }
       continue;
     default:
@@ -251,28 +252,6 @@ char* split_at_separator(char* input, char separator) {
     ++input;
   }
   return input;
-}
-
-void parse_command(StreamEx& stream, Args args, const Command commands[], uint8_t length) {
-  const char* command = args.next();
-
-  // Look for match in command list
-  for (uint8_t i = 0; i < length; ++i) {
-    if (strcmp(command, commands[i].command) == 0) {
-      commands[i].callback(args);
-      return;
-    }
-  }
-
-  // Invalid command; print command list
-  stream.write("Commands: ");
-  for (uint8_t i = 0; i < length; ++i) {
-    if (i > 0) {
-      stream.write(", ");
-    }
-    stream.write(commands[i].command);
-  }
-  stream.write('\n');
 }
 
 const char* Args::next() {
