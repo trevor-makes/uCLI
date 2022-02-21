@@ -10,7 +10,7 @@ namespace uCLI {
 
 using uANSI::StreamEx;
 
-using CommandFn = void (*)(StreamEx&, class Args);
+using CommandFn = void (*)(StreamEx&, class Tokens);
 using IdleFn = void (*)();
 
 // Function pointer to be called when command string is entered
@@ -19,16 +19,16 @@ struct Command {
   CommandFn callback;
 };
 
-class Args {
+class Tokens {
 private:
   char* next_;
 
 public:
-  Args(char* args): next_{args} {}
+  Tokens(char* args): next_{args} {}
 
   // Casting const literal "" to char* is a necessary evil for now so that we
   // can avoid dealing with nullptr; the empty string will NOT be mutated
-  Args(): next_{const_cast<char*>("")} {}
+  Tokens(): next_{const_cast<char*>("")} {}
 
   const char* next();
   bool has_next() { return *next_ != '\0'; }
@@ -140,7 +140,7 @@ public:
 };
 
 // Read string from stream into buffer
-Args read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idle_fn = nullptr);
+Tokens read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idle_fn = nullptr);
 
 template <uint8_t SIZE>
 class CursorOwner : public Cursor {
@@ -165,15 +165,28 @@ class CLI {
 public:
   CLI(StreamEx& stream): stream_{stream} {}
 
+  Tokens read(const char* prefill = nullptr, IdleFn idle_fn = nullptr) {
+    cursor_.clear();
+    if (prefill != nullptr) {
+      // Copy editable text into line buffer
+      cursor_.try_insert(prefill);
+      stream_.print(cursor_.contents());
+    }
+    return read_command(stream_, cursor_, history_, idle_fn);
+  }
+
+  template <uint8_t CMD_LEN>
+  void dispatch(Tokens tokens, const Command (&commands)[CMD_LEN]) {
+    tokens.dispatch(stream_, commands);
+  }
+
   // Display prompt and execute command from stream
   template <uint8_t CMD_LEN>
   void prompt(const Command (&commands)[CMD_LEN], IdleFn idle_fn = nullptr) {
     stream_.write('>');
-    cursor_.clear();
-    Args args = read_command(stream_, cursor_, history_, idle_fn);
+    Tokens tokens = read(nullptr, idle_fn);
     stream_.write('\n');
-
-    args.dispatch(stream_, commands);
+    dispatch(tokens, commands);
   }
 };
 

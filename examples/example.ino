@@ -1,14 +1,21 @@
+#include <Arduino.h>
+
 #include "uCLI.hpp"
 
-uCLI::StreamEx serial_ex{Serial};
+using uCLI::CLI;
+using uCLI::StreamEx;
+using uCLI::Tokens;
+
+StreamEx serial_ex(Serial);
+CLI<> serial_cli(serial_ex);
 
 void setup() {
   Serial.begin(9600);
   while (!Serial) {}
 }
 
-void do_add(uCLI::Args args);
-void do_echo(uCLI::Args args);
+void do_add(StreamEx, Tokens);
+void do_echo(StreamEx, Tokens);
 
 void loop() {
   // command list can be global or static local
@@ -16,20 +23,19 @@ void loop() {
     { "add", do_add }, // call do_add when "add" is entered
     { "echo", do_echo }, // call do_echo when "echo" is entered
   };
-
-  uCLI::run_command(serial_ex, commands);
+  serial_cli.prompt(commands);
 }
 
-void do_add(uCLI::Args args) {
+void do_add(StreamEx& stream, Tokens args) {
   int a = atoi(args.next());
   int b = atoi(args.next());
-  Serial.print(a);
-  Serial.print(" + ");
-  Serial.print(b);
-  Serial.print(" = ");
-  Serial.println(a + b);
+  stream.print(a);
+  stream.print(" + ");
+  stream.print(b);
+  stream.print(" = ");
+  stream.println(a + b);
 }
 
-void do_echo(uCLI::Args args) {
-  Serial.println(args.next());
+void do_echo(StreamEx& stream, Tokens args) {
+  stream.println(args.next());
 }

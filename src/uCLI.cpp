@@ -167,7 +167,7 @@ inline void clear_line(StreamEx& stream, Cursor& cursor) {
   cursor.clear();
 }
 
-Args read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idle_fn) {
+Tokens read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idle_fn) {
   history.reset_index();
 
   for (;;) {
@@ -226,7 +226,7 @@ Args read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idl
       if (cursor.length() > 0) {
         // Exit loop and execute command if line is not empty
         history.push(cursor);
-        return Args(cursor.contents());
+        return Tokens(cursor.contents());
       }
       continue;
     default:
@@ -269,7 +269,7 @@ char* split_at_separator(char* input, char separator) {
   return input;
 }
 
-const char* Args::next() {
+const char* Tokens::next() {
   char* next = next_;
   if (*next == '\"') {
     next_ = split_at_separator(++next, '\"');
