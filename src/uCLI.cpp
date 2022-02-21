@@ -167,86 +167,74 @@ inline void clear_line(StreamEx& stream, Cursor& cursor) {
   cursor.clear();
 }
 
-Tokens read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idle_fn) {
-  history.reset_index();
-
-  for (;;) {
-    // Call user idle function once per loop
-    if (idle_fn) {
-      idle_fn();
+bool try_read(StreamEx& stream, Cursor& cursor, History& history) {
+  int input = stream.read();
+  switch (input) {
+  case -1:
+    break;
+  case uANSI::KEY_LEFT:
+    if (cursor.try_left()) {
+      stream.cursor_left();
     }
-
-    // Get next key press
-    int input = stream.read();
-    if (input == -1) {
-      continue;
+    break;
+  case uANSI::KEY_RIGHT:
+    if (cursor.try_right()) {
+      stream.cursor_right();
     }
-
-    switch (input) {
-    case uANSI::KEY_LEFT:
-      if (cursor.try_left()) {
-        stream.cursor_left();
-      }
-      continue;
-    case uANSI::KEY_RIGHT:
-      if (cursor.try_right()) {
-        stream.cursor_right();
-      }
-      continue;
-    case uANSI::KEY_HOME:
-      // Move cursor far left
-      stream.cursor_left(cursor.seek_home());
-      continue;
-    case uANSI::KEY_END:
-      // Move cursor far right
-      stream.cursor_right(cursor.seek_end());
-      continue;
-    case uANSI::KEY_UP:
-      if (history.has_prev()) {
-        clear_line(stream, cursor);
-        history.copy_prev(cursor);
-        stream.print(cursor.contents());
-      }
-      continue;
-    case uANSI::KEY_DOWN:
+    break;
+  case uANSI::KEY_HOME:
+    // Move cursor far left
+    stream.cursor_left(cursor.seek_home());
+    break;
+  case uANSI::KEY_END:
+    // Move cursor far right
+    stream.cursor_right(cursor.seek_end());
+    break;
+  case uANSI::KEY_UP:
+    if (history.has_prev()) {
       clear_line(stream, cursor);
-      if (history.has_next()) {
-        history.copy_next(cursor);
-        stream.print(cursor.contents());
+      history.copy_prev(cursor);
+      stream.print(cursor.contents());
+    }
+    break;
+  case uANSI::KEY_DOWN:
+    clear_line(stream, cursor);
+    if (history.has_next()) {
+      history.copy_next(cursor);
+      stream.print(cursor.contents());
+    }
+    break;
+  case '\x08': // ASCII backspace
+  case '\x7F': // ASCII delete (not ANSI delete \e[3~)
+    if (cursor.try_delete()) {
+      stream.cursor_left();
+      stream.delete_char();
+    }
+    break;
+  case '\n': // NOTE uANSI transforms \r and \r\n to \n
+    if (cursor.length() > 0) {
+      // Exit loop and execute command if line is not empty
+      history.push(cursor);
+      return true;
+    }
+    break;
+  default:
+    // Ignore other non-printable ASCII chars and uANSI input sequences
+    // NOTE UTF-8 multi-byte encodings in [0x80, 0xFF] should be ok
+    if (input < 0x20 || input > 0xFF) {
+      break;
+    }
+    // Echo inserted character to stream
+    if (cursor.try_insert(input)) {
+      if (!cursor.at_eol()) {
+        stream.insert_char();
       }
-      continue;
-    case '\x08': // ASCII backspace
-    case '\x7F': // ASCII delete (not ANSI delete \e[3~)
-      if (cursor.try_delete()) {
-        stream.cursor_left();
-        stream.delete_char();
-      }
-      continue;
-    case '\n': // NOTE uANSI transforms \r and \r\n to \n
-      if (cursor.length() > 0) {
-        // Exit loop and execute command if line is not empty
-        history.push(cursor);
-        return Tokens(cursor.contents());
-      }
-      continue;
-    default:
-      // Ignore other non-printable ASCII chars and uANSI input sequences
-      // NOTE UTF-8 multi-byte encodings in [0x80, 0xFF] should be ok
-      if (input < 0x20 || input > 0xFF) {
-        continue;
-      }
-
-      // Echo inserted character to stream
-      if (cursor.try_insert(input)) {
-        if (!cursor.at_eol()) {
-          stream.insert_char();
-        }
-        stream.write(input);
-        // Reset history index on edit
-        history.reset_index();
-      }
+      stream.write(input);
+      // Reset history index on edit
+      history.reset_index();
     }
   }
+  return false;
 }
 
 char* trim_space(char* input) {

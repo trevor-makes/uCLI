@@ -119,8 +119,8 @@ public:
   void copy_next(Cursor& cursor);
 };
 
-// Read string from stream into buffer
-Tokens read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idle_fn = nullptr);
+// Read from stream into cursor without blocking
+bool try_read(StreamEx& stream, Cursor& cursor, History& history);
 
 template <uint8_t SIZE>
 class CursorOwner : public Cursor {
@@ -152,7 +152,13 @@ public:
       cursor_.try_insert(prefill);
       stream_.print(cursor_.contents());
     }
-    return read_command(stream_, cursor_, history_, idle_fn);
+    while (!try_read(stream_, cursor_, history_)) {
+      // Call idle function while waiting for input
+      if (idle_fn != nullptr) {
+        idle_fn();
+      }
+    }
+    return Tokens(cursor_.contents());
   }
 
   // Attempt to match the next argument to a command in the list
