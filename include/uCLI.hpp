@@ -10,7 +10,7 @@ namespace uCLI {
 
 using uANSI::StreamEx;
 
-using CommandFn = void (*)(StreamEx&, class Tokens);
+using CommandFn = void (*)(class Tokens);
 using IdleFn = void (*)();
 
 // Function pointer to be called when command string is entered
@@ -161,7 +161,7 @@ public:
     for (const Command& command : commands) {
       // Run callback function if input matches keyword
       if (strcmp(input, command.keyword) == 0) {
-        command.callback(stream_, args);
+        command.callback(args);
         return true;
       }
     }
