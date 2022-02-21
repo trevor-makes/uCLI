@@ -57,9 +57,13 @@ public:
 
   uint8_t length() const { return length_; }
   const char* contents() const { return buffer_; }
+  char* contents() { return buffer_; }
   bool at_eol() const { return cursor_ == length_; }
 
-  void clear() { cursor_ = length_ = 0; }
+  void clear() {
+    cursor_ = length_ = 0;
+    buffer_[0] = '\0';
+  }
 
   // Insert at cursor up to size chars from input, returning count
   uint8_t try_insert(const char* input, uint8_t size = 255);
@@ -121,21 +125,41 @@ void parse_command(StreamEx& stream, Args args, const Command (&commands)[CMD_LE
   parse_command(stream, args, commands, CMD_LEN);
 }
 
-// Display prompt and execute command from stream
-template <uint8_t BUF_LEN = 80, uint8_t HIST_LEN = 80, uint8_t CMD_LEN>
-void run_command(StreamEx& stream, const Command (&commands)[CMD_LEN], IdleFn idle_fn = nullptr) {
-  static char buffer[BUF_LEN];
-  static char hist_buf[HIST_LEN];
-  static History history{hist_buf};
+template <uint8_t SIZE>
+class CursorOwner : public Cursor {
+  char buffer_[SIZE];
+public:
+  CursorOwner(): Cursor(buffer_) {}
+};
 
-  stream.write('>');
-  Cursor cursor{buffer};
-  read_command(stream, cursor, history, idle_fn);
-  history.push_from(cursor);
-  stream.write('\n');
+template <uint8_t SIZE>
+class HistoryOwner : public History {
+  char buffer_[SIZE];
+public:
+  HistoryOwner(): History(buffer_) {}
+};
 
-  Args args{buffer};
-  parse_command(stream, args, commands, CMD_LEN);
-}
+template <uint8_t BUF_LEN = 80, uint8_t HIST_LEN = 80>
+class CLI {
+  CursorOwner<BUF_LEN> cursor_;
+  HistoryOwner<HIST_LEN> history_;
+  StreamEx& stream_;
+
+public:
+  CLI(StreamEx& stream): stream_{stream} {}
+
+  // Display prompt and execute command from stream
+  template <uint8_t CMD_LEN>
+  void run_command(const Command (&commands)[CMD_LEN], IdleFn idle_fn = nullptr) {
+    stream_.write('>');
+    cursor_.clear();
+    read_command(stream_, cursor_, history_, idle_fn);
+    history_.push_from(cursor_);
+    stream_.write('\n');
+
+    Args args{cursor_.contents()};
+    parse_command(stream_, args, commands, CMD_LEN);
+  }
+};
 
 } // namespace uCLI
