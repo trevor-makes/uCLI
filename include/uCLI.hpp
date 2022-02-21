@@ -120,6 +120,9 @@ class History {
   char* buffer_;
   uint8_t size_;
   uint8_t entries_ = 0;
+  uint8_t index_ = 0;
+
+  void copy_entry(uint8_t entry, Cursor& cursor);
 
 public:
   template <uint8_t N>
@@ -127,10 +130,13 @@ public:
   History(char* buffer, uint8_t size): buffer_{buffer}, size_{size} {}
   History(): buffer_{nullptr}, size_{0} {}
 
-  uint8_t entries() const { return entries_; }
+  void reset_index() { index_ = 0; }
+  bool has_prev() { return index_ < entries_; }
+  bool has_next() { return index_ > 0; }
 
-  void push_from(const Cursor& cursor);
-  void copy_to(uint8_t entry, Cursor& cursor);
+  void push(const Cursor& cursor);
+  void copy_prev(Cursor& cursor);
+  void copy_next(Cursor& cursor);
 };
 
 // Read string from stream into buffer

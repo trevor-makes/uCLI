@@ -96,7 +96,7 @@ bool Cursor::try_delete() {
   return true;
 }
 
-void History::push_from(const Cursor& cursor) {
+void History::push(const Cursor& cursor) {
   if (size_ == 0) {
     return;
   }
@@ -122,9 +122,11 @@ void History::push_from(const Cursor& cursor) {
   memcpy(buffer_ + 1, cursor.contents(), size);
   buffer_[0] = size;
   ++entries_;
+
+  reset_index();
 }
 
-void History::copy_to(uint8_t entry, Cursor& cursor) {
+void History::copy_entry(uint8_t entry, Cursor& cursor) {
   if (entry >= entries_) {
     return;
   }
@@ -142,6 +144,22 @@ void History::copy_to(uint8_t entry, Cursor& cursor) {
   cursor.try_insert(offset, size);
 }
 
+void History::copy_prev(Cursor& cursor) {
+  if (index_ < entries_) {
+    copy_entry(index_, cursor);
+    ++index_;
+  }
+}
+
+void History::copy_next(Cursor& cursor) {
+  if (index_ > 0) {
+    --index_;
+    if (index_ > 0) {
+      copy_entry(index_ - 1, cursor);
+    }
+  }
+}
+
 // Move cursor far left and delete line
 inline void clear_line(StreamEx& stream, Cursor& cursor) {
   stream.cursor_left(cursor.seek_home());
@@ -150,7 +168,7 @@ inline void clear_line(StreamEx& stream, Cursor& cursor) {
 }
 
 Args read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idle_fn) {
-  uint8_t hist_index = 0;
+  history.reset_index();
 
   for (;;) {
     // Call user idle function once per loop
@@ -184,19 +202,16 @@ Args read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idl
       stream.cursor_right(cursor.seek_end());
       continue;
     case uANSI::KEY_UP:
-      if (hist_index < history.entries()) {
+      if (history.has_prev()) {
         clear_line(stream, cursor);
-        // Copy history entry into buffer
-        history.copy_to(hist_index++, cursor);
+        history.copy_prev(cursor);
         stream.print(cursor.contents());
       }
       continue;
     case uANSI::KEY_DOWN:
       clear_line(stream, cursor);
-      hist_index = hist_index > 0 ? hist_index - 1 : 0;
-      if (hist_index > 0) {
-        // Copy history entry into buffer
-        history.copy_to(hist_index - 1, cursor);
+      if (history.has_next()) {
+        history.copy_next(cursor);
         stream.print(cursor.contents());
       }
       continue;
@@ -210,7 +225,7 @@ Args read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idl
     case '\n': // NOTE uANSI transforms \r and \r\n to \n
       if (cursor.length() > 0) {
         // Exit loop and execute command if line is not empty
-        history.push_from(cursor);
+        history.push(cursor);
         return Args(cursor.contents());
       }
       continue;
@@ -228,7 +243,7 @@ Args read_command(StreamEx& stream, Cursor& cursor, History& history, IdleFn idl
         }
         stream.write(input);
         // Reset history index on edit
-        hist_index = 0;
+        history.reset_index();
       }
     }
   }
