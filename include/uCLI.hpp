@@ -58,7 +58,7 @@ class Cursor {
 public:
   template <uint8_t N>
   Cursor(char (&buffer)[N]): Cursor(buffer, N) {}
-  Cursor(char* buffer, uint8_t size): buffer_{buffer}, limit_{uint8_t(size - 1)} { buffer_[0] = '\0'; }
+  Cursor(char* buffer, uint8_t size): buffer_{buffer}, limit_{uint8_t(size - 1)} { clear(); }
 
   // Prevent copying
   Cursor(const Cursor&) = delete;
@@ -145,11 +145,11 @@ class CLI {
 public:
   CLI(StreamEx& stream): stream_{stream} {}
 
-  Tokens read(const char* prefill = nullptr, IdleFn idle_fn = nullptr) {
+  Tokens read(IdleFn idle_fn = nullptr, const char* preset = nullptr) {
     cursor_.clear();
-    if (prefill != nullptr) {
+    if (preset != nullptr) {
       // Copy editable text into line buffer
-      cursor_.try_insert(prefill);
+      cursor_.try_insert(preset);
       stream_.print(cursor_.contents());
     }
     while (!try_read(stream_, cursor_, history_)) {
@@ -174,21 +174,26 @@ public:
     return false;
   }
 
+  template <uint8_t N>
+  void print_help(const Command (&commands)[N]) {
+    stream_.println("Commands:");
+    for (const Command& command : commands) {
+      stream_.println(command.keyword);
+    }
+  }
+
   // Display prompt and execute command from stream
   template <uint8_t N>
-  void prompt(const Command (&commands)[N], IdleFn idle_fn = nullptr) {
+  void prompt(const Command (&commands)[N], IdleFn idle_fn = nullptr, const char* preset = nullptr) {
     // Block while waiting for command entry
     stream_.print('>');
-    Tokens tokens = read(nullptr, idle_fn);
+    Tokens tokens = read(idle_fn, preset);
     stream_.print('\n');
 
     // Attempt to dispatch, othewise print help message
     const char* command = tokens.next();
     if (!dispatch(command, tokens, commands)) {
-      stream_.println("Commands:");
-      for (const Command& command : commands) {
-        stream_.println(command.keyword);
-      }
+      print_help(commands);
     }
   }
 };
