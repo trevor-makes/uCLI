@@ -10,7 +10,7 @@ namespace uCLI {
 
 using uANSI::StreamEx;
 
-using CommandFn = void (*)(class Tokens);
+using CommandFn = void (*)(class Args);
 using IdleFn = void (*)();
 
 // Function pointer to be called when command string is entered
@@ -49,6 +49,17 @@ public:
   }
 };
 
+// Wrapper around Tokens to remember command name
+class Args : public Tokens {
+  const char* command_;
+
+public:
+  Args(char* args): Tokens{args} { command_ = next(); }
+  Args(const char* command, Tokens tokens): Tokens{tokens}, command_{command} {}
+
+  const char* command() const { return command_; }
+};
+
 class Cursor {
   char* buffer_;
   uint8_t limit_; // Maximum number of characters, excluding null terminator
@@ -76,6 +87,11 @@ public:
 
   // Insert at cursor up to size chars from input, returning count
   uint8_t try_insert(const char* input, uint8_t size = 255);
+
+  // Insert from another cursor, returning number of chars copied
+  uint8_t try_insert(const Cursor& cursor) {
+    return try_insert(cursor.contents(), cursor.length());
+  }
 
   // Attempt to insert at cursor, returning false if full
   bool try_insert(char input);
@@ -145,12 +161,13 @@ class CLI {
 public:
   CLI(StreamEx& stream): stream_{stream} {}
 
-  Tokens read(IdleFn idle_fn = nullptr, const char* preset = nullptr) {
+  Args read(IdleFn idle_fn = nullptr, Cursor* preset = nullptr) {
     cursor_.clear();
     if (preset != nullptr) {
       // Copy editable text into line buffer
-      cursor_.try_insert(preset);
+      cursor_.try_insert(*preset);
       stream_.print(cursor_.contents());
+      preset->clear();
     }
     while (!try_read(stream_, cursor_, history_)) {
       // Call idle function while waiting for input
@@ -158,15 +175,15 @@ public:
         idle_fn();
       }
     }
-    return Tokens(cursor_.contents());
+    return Args(cursor_.contents());
   }
 
   // Attempt to match the next argument to a command in the list
   template <uint8_t N>
-  bool dispatch(const char* input, Tokens args, const Command (&commands)[N]) {
+  bool dispatch(Args args, const Command (&commands)[N]) {
     for (const Command& command : commands) {
       // Run callback function if input matches keyword
-      if (strcmp(input, command.keyword) == 0) {
+      if (strcmp(args.command(), command.keyword) == 0) {
         command.callback(args);
         return true;
       }
@@ -184,15 +201,14 @@ public:
 
   // Display prompt and execute command from stream
   template <uint8_t N>
-  void prompt(const Command (&commands)[N], IdleFn idle_fn = nullptr, const char* preset = nullptr) {
+  void prompt(const Command (&commands)[N], IdleFn idle_fn = nullptr, Cursor* preset = nullptr) {
     // Block while waiting for command entry
     stream_.print('>');
-    Tokens tokens = read(idle_fn, preset);
+    Args args = read(idle_fn, preset);
     stream_.print('\n');
 
     // Attempt to dispatch, othewise print help message
-    const char* command = tokens.next();
-    if (!dispatch(command, tokens, commands)) {
+    if (!dispatch(args, commands)) {
       print_help(commands);
     }
   }
