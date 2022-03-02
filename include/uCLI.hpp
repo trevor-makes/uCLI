@@ -57,6 +57,8 @@ public:
   Args(char* args): Tokens{args} { command_ = next(); }
   Args(const char* command, Tokens tokens): Tokens{tokens}, command_{command} {}
 
+  Args(): Tokens{}, command_{""} {}
+
   const char* command() const { return command_; }
 };
 
