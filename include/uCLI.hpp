@@ -152,22 +152,26 @@ public:
   HistoryOwner(): History(buffer_) {}
 };
 
-template <uint8_t BUF_SIZE = 80, uint8_t HIST_SIZE = 80>
+template <uint8_t BUF_SIZE = 80, uint8_t HIST_SIZE = 80, uint8_t PRE_SIZE = 20>
 class CLI {
+  StreamEx& stream_;
   CursorOwner<BUF_SIZE> cursor_;
   HistoryOwner<HIST_SIZE> history_;
-  StreamEx& stream_;
+  CursorOwner<PRE_SIZE> preset_;
 
 public:
   CLI(StreamEx& stream): stream_{stream} {}
 
-  Args read(IdleFn idle_fn = nullptr, Cursor* preset = nullptr) {
+  void insert(const char* str) { preset_.try_insert(str); }
+  void insert(char c) { preset_.try_insert(c); }
+
+  Args read(IdleFn idle_fn = nullptr) {
     cursor_.clear();
-    if (preset != nullptr) {
+    if (preset_.length() > 0) {
       // Copy editable text into line buffer
-      cursor_.try_insert(*preset);
+      cursor_.try_insert(preset_);
       stream_.print(cursor_.contents());
-      preset->clear();
+      preset_.clear();
     }
     while (!try_read(stream_, cursor_, history_)) {
       // Call idle function while waiting for input
@@ -201,10 +205,10 @@ public:
 
   // Display prompt and execute command from stream
   template <uint8_t N>
-  void prompt(const Command (&commands)[N], IdleFn idle_fn = nullptr, Cursor* preset = nullptr) {
+  void prompt(const Command (&commands)[N], IdleFn idle_fn = nullptr) {
     // Block while waiting for command entry
     stream_.print('>');
-    Args args = read(idle_fn, preset);
+    Args args = read(idle_fn);
     stream_.print('\n');
 
     // Attempt to dispatch, othewise print help message
