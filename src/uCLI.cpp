@@ -51,7 +51,7 @@ uint8_t Cursor::try_insert(const char* input, uint8_t size) {
   if (size > 0) {
     // Move what follows the cursor and copy input into hole
     memmove(buffer_ + cursor_ + size, buffer_ + cursor_, length_ - cursor_);
-    memcpy(buffer_, input, size);
+    memcpy(buffer_ + cursor_, input, size);
     cursor_ += size;
     length_ += size;
     buffer_[length_] = '\0';
