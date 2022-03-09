@@ -31,8 +31,9 @@ public:
   Tokens(): next_{const_cast<char*>("")} {}
 
   const char* next();
-  bool has_next() { return *next_ != '\0'; }
-  bool is_string() { return *next_ == '\"' || *next_ == '\''; }
+  char peek_char() const { return *next_; }
+  bool has_next() const { return *next_ != '\0'; }
+  bool is_string() const { return *next_ == '\"' || *next_ == '\''; }
 
   template <uint8_t N>
   uint8_t get(const char* (&argv)[N], bool are_strings[] = nullptr) {
@@ -47,6 +48,9 @@ public:
     }
     return N;
   }
+
+  void trim_left(char padding);
+  Tokens split_at(char separator);
 };
 
 // Wrapper around Tokens to remember command name

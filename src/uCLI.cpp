@@ -237,36 +237,37 @@ bool try_read(StreamEx& stream, Cursor& cursor, History& history) {
   return false;
 }
 
-char* trim_space(char* input) {
-  while (*input == ' ') {
-    ++input;
+void Tokens::trim_left(char padding) {
+  while (*next_ == padding) {
+    ++next_;
   }
-  return input;
 }
 
-char* split_at_separator(char* input, char separator) {
+Tokens Tokens::split_at(char separator) {
+  Tokens prev = next_;
   // Scan until end of string
-  while (*input != '\0') {
+  while (*next_ != '\0') {
     // Replace separator with null and return
-    if (*input == separator) {
-      *input++ = '\0';
-      return trim_space(input);
+    if (*next_ == separator) {
+      *next_++ = '\0';
+      break;
     }
-    ++input;
+    ++next_;
   }
-  return input;
+  return prev;
 }
 
 const char* Tokens::next() {
-  char* next = next_;
-  if (*next == '\"') {
-    next_ = split_at_separator(++next, '\"');
-  } else if (*next == '\'') {
-    next_ = split_at_separator(++next, '\'');
+  Tokens prev;
+  char c = peek_char();
+  if (c == '\"' || c == '\'') {
+    ++next_; // skip past open quote
+    prev = split_at(c);
   } else {
-    next_ = split_at_separator(next, ' ');
+    prev = split_at(' ');
   }
-  return next;
+  trim_left(' ');
+  return prev.next_;
 }
 
 } // namespace uCLI
