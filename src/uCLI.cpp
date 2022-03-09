@@ -254,6 +254,7 @@ Tokens Tokens::split_at(char separator) {
     }
     ++next_;
   }
+  trim_left(' ');
   return prev;
 }
 
@@ -266,7 +267,6 @@ const char* Tokens::next() {
   } else {
     prev = split_at(' ');
   }
-  trim_left(' ');
   return prev.next_;
 }
 

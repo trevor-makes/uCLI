@@ -24,7 +24,7 @@ private:
   char* next_;
 
 public:
-  Tokens(char* args): next_{args} {}
+  Tokens(char* args): next_{args} { trim_left(' '); }
 
   // Casting const literal "" to char* is a necessary evil for now so that we
   // can avoid dealing with nullptr; the empty string will NOT be mutated
