@@ -3,7 +3,14 @@
 #include "uCLI.hpp"
 #include "uANSI.hpp"
 
-#include <Arduino.h>
+#ifdef min
+#undef min
+#endif
+
+template <typename T>
+T min(T a, T b) {
+  return a < b ? a : b;
+}
 
 namespace uCLI {
 
@@ -39,7 +46,7 @@ uint8_t Cursor::seek_end() {
 
 uint8_t Cursor::try_insert(const char* input, uint8_t size) {
   // Limit size to space available in Cursor
-  size = min(size, limit_ - length_);
+  size = min(size, uint8_t(limit_ - length_));
 
   // Limit size to null terminator in input
   for (uint8_t i = 0; i < size; ++i) {
@@ -102,7 +109,7 @@ void History::push(const Cursor& cursor) {
   }
 
   // Limit entry size to absolute size of history buffer (excluding prefix)
-  uint8_t size = min(cursor.length(), size_ - 1);
+  uint8_t size = min(cursor.length(), uint8_t(size_ - 1));
   uint8_t available = size_ - (size + 1);
 
   // Determine how many old entries will be overwritten
