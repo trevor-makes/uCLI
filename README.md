@@ -25,11 +25,18 @@ uCLI is distributed under the [MIT license](LICENSE.txt)
 
 ## Usage
 
-Use the `run_command()` function to display a '>' prompt and block while waiting for input. When the enter key is pressed, the first token in the input will be matched with a `Command` key-value pair and the associated function pointer will be called. If the input does not match a command, the list of commands will be printed instead. Any remaining tokens following a matched command will be provided as an `Args` parameter to that function. Each call to `run_command()` handles one command and returns, so it should normally be called within a loop.
+Create a `StreamEx` wrapper around the Arduino stream that will serve the command line, in this case `Serial` for the USB serial on an Arduino Uno. Then create a `CLI<>` instance to drive the command line.
 
 ```
-uCLI::StreamEx serial_ex{Serial};
+#include "uCLI.hpp"
 
+uCLI::StreamEx serial_ex{Serial};
+uCLI::CLI<> serial_cli{serial_ex};
+```
+
+Use the `prompt()` method of an instance of `CLI` to display a '>' prompt and wait for user input. When the enter key is pressed, the first token in the input will be matched with a `Command` keyword and the paired function pointer will be called. Any remaining tokens will be passed on as an `Args` parameter to that function. If the input does not match a keyword, the list of commands will be printed instead. Each call to `prompt()` handles one command and returns, so it should be called within a loop for an interactive program.
+
+```
 void loop() {
   // command list can be global or static local
   static const uCLI::Command commands[] = {
@@ -37,7 +44,7 @@ void loop() {
     { "get", test_get }, // call test_get when "get" is entered
   };
 
-  uCLI::run_command(Serial, commands);
+  serial_cli.prompt(commands);
 }
 ```
 
