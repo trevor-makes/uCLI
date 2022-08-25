@@ -1,5 +1,7 @@
 # uCLI
 
+**Deprecated! Merged into [core](https://github.com/trevor-makes/core)**
+
 uCLI is a simple callback-based command line interface for Arduino projects.
 
 uCLI is designed for Arduino and supports serial connections that implement the Stream interface, like Serial, SoftwareSerial, and SerialUSB. This library is intended to be used with [PlatformIO](https://platformio.org/), but the source files can be manually copied into a project when using the Arduino IDE.
